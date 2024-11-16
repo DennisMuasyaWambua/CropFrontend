@@ -1,76 +1,196 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, Loader2 } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import axios from 'axios';
+import { useState, useEffect} from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import axios from "axios";
+import { ABI } from "./abi";
+import Web3 from "web3";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
 export default function CropRecommender() {
+  const [account, setAccount] = useState(null);
   const [formData, setFormData] = useState({
-    N: "",
-    P: "",
-    K: "",
+    n: "",
+    p: "",
+    k: "",
+    temperature: "",
     humidity: "",
     ph: "",
-    rainfall: ""
-  })
-  const [recommendation, setRecommendation] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+    rainfall: "",
+  });
+  const [recommendation, setRecommendation] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [position, setPosition] = useState(null);  
 
+
+  useEffect(() => {
+    const getUserLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setPosition({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          (error) => {
+            console.error('Error getting user location:', error);
+          }
+        );
+      } else {
+        console.error('Geolocation is not supported by this browser.');
+      }
+    };
+
+    getUserLocation();  
+
+  }, []);
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  async function connectWallet() {
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+      const account = accounts[0];
+
+      setAccount(account);
+
+      // Create a contract instance
+      // const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+      // Call a contract function (e.g., reading data)
+      // const result = await contract.methods.yourFunction().call();
+
+      // Call a contract function (e.g., sending a transaction)
+      // const tx = await contract.methods.yourFunction(params).send({ from: account });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-    setRecommendation("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setRecommendation("");
 
     try {
-     const response =   await axios.post('https://djangofarmers-production.up.railway.app/api/recommend/', {
-            // Data to be sent in the request body
-            n:formData.n,
-            p:formData.p,
-            k:formData.k,
-            temperature:formData.temperature,
-            humidity:formData.humidity,
-            ph:formData.ph,
-            rainfall:formData.rainfall,
-        },{
-        headers: {
-            'Content-Type': 'application/json',
-        }}
+      connectWallet();
+    let accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    let _account = accounts[0]
+      const web3 = new Web3(window.ethereum); // Replace with your provider
+
+      // Get contract instance using contract address and ABI
+      const contract = new web3.eth.Contract(
+        ABI,
+        "0xBF0fCf1AEd56Dcf6f48C155DEB73C67C29b33Cf4",
+        {
+            from: _account,
+            gasPrice: '20000000'
+        }
+      );
+      contract.setProvider("wss://ws.sepolia-api.lisk.com")
+      console.log("calling ", contract);
+      const info = {
+        n: formData.n,
+        p: formData.p,
+        k: formData.k,
+        temperature: formData.temperature,
+        // Omit temperature (not defined in the smart contract)
+        humidity: formData.humidity,
+        ph: formData.ph,
+        rainfall: formData.rainfall,
+      };
+      console.log(info);
+      contract.methods
+        .submitData(
+          Number(info.n),
+          Number(info.p),
+          Number(info.k),
+          Number(info.temperature),
+          Number(info.humidity),
+          Number(info.ph),
+          Number(info.rainfall),
         )
+        .send({ from: account, gasPrice: '2000000000', gas: "200000000" })
+        .on('transactionHash', function(hash){
+            console.log(hash)
+        })
+        .on('error', function(error, receipt) { // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+            console.log("Error: ", error, receipt)
+        });
 
-        setRecommendation(response.data.message)
-        
-  
+    const tx = await contract.methods['submitData']
 
-      if (!response.ok) {
-        throw new Error('Failed to get recommendation')
+      console.log("Transaction hash:", tx.transactionHash);
+
+      // Handle success or error based on transaction status
+      if (!tx.status) {
+        throw new Error("Failed to submit data to smart contract");
       }
 
-      const data = await response.json()
-      setRecommendation(data.prediction)
+      const response = await axios.post(
+        "https://djangofarmers-production.up.railway.app/api/recommend/",
+        {
+          // Data to be sent in the request body
+          n: formData.n,
+          p: formData.p,
+          k: formData.k,
+          temperature: formData.temperature,
+          humidity: formData.humidity,
+          ph: formData.ph,
+          rainfall: formData.rainfall,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setRecommendation(response.data.message);
+
+      if (!response.ok) {
+        throw new Error("Failed to get recommendation");
+      }
+
+      const data = await response.json();
+      setRecommendation(data.prediction);
     } catch (err) {
-      setError("Failed to get recommendation. Please try again."+ err)
+      setError("Failed to get recommendation. Please try again." + err);
+      console.log(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle>Crop Recommender</CardTitle>
-        <CardDescription>Enter soil and environmental data to get a crop recommendation.</CardDescription>
+        <CardDescription>
+          Enter soil and environmental data to get a crop recommendation.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -184,10 +304,16 @@ export default function CropRecommender() {
         {recommendation && (
           <Alert>
             <AlertTitle>Recommended Crop</AlertTitle>
-            <AlertDescription>{recommendation.replace('b\'', '').replace('\'', '')}</AlertDescription>
+            <AlertDescription>
+              {recommendation.replace("b'", "").replace("'", "")}
+              
+            </AlertDescription>
           </Alert>
+
+
         )}
+
       </CardFooter>
     </Card>
-  )
+  );
 }
