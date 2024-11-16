@@ -36,13 +36,13 @@ export default function CropRecommender() {
     try {
      const response =   axios.post('https://djangofarmers-production.up.railway.app/api/recommend/', {
             // Data to be sent in the request body
-            N:formData.N,
-            P:formData.P,
-            K:formData.K,
-            Temperature:formData.temperature,
-            Humidity:formData.humidity,
-            Ph:formData.ph,
-            Rainfall:formData.rainfall,
+            n:formData.n,
+            p:formData.p,
+            k:formData.k,
+            temperature:formData.temperature,
+            humidity:formData.humidity,
+            ph:formData.ph,
+            rainfall:formData.rainfall,
         },{
         headers: {
             'Content-Type': 'application/json',
@@ -52,20 +52,7 @@ export default function CropRecommender() {
             console.log(response.data); // Handle the response data
         })
         
-    //   const response = await fetch('https://djangofarmers-production.up.railway.app/api/recommend/', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({
-    //       N: parseFloat(formData.N),
-    //       P: parseFloat(formData.P),
-    //       K: parseFloat(formData.K),
-    //       humidity: parseFloat(formData.humidity),
-    //       ph: parseFloat(formData.ph),
-    //       rainfall: parseFloat(formData.rainfall)
-    //     }),
-    //   })
+  
 
       if (!response.ok) {
         throw new Error('Failed to get recommendation')
@@ -96,7 +83,7 @@ export default function CropRecommender() {
                 name="n"
                 type="number"
                 placeholder="0-140"
-                value={formData.N}
+                value={formData.n}
                 onChange={handleInputChange}
                 required
               />
@@ -108,7 +95,7 @@ export default function CropRecommender() {
                 name="p"
                 type="number"
                 placeholder="5-145"
-                value={formData.P}
+                value={formData.p}
                 onChange={handleInputChange}
                 required
               />
@@ -120,7 +107,7 @@ export default function CropRecommender() {
                 name="k"
                 type="number"
                 placeholder="5-205"
-                value={formData.K}
+                value={formData.k}
                 onChange={handleInputChange}
                 required
               />
