@@ -34,7 +34,7 @@ export default function CropRecommender() {
     setRecommendation("")
 
     try {
-     const response =   axios.post('https://djangofarmers-production.up.railway.app/api/recommend/', {
+     const response =   await axios.post('https://djangofarmers-production.up.railway.app/api/recommend/', {
             // Data to be sent in the request body
             n:formData.n,
             p:formData.p,
@@ -48,9 +48,8 @@ export default function CropRecommender() {
             'Content-Type': 'application/json',
         }}
         )
-        .then(response => {
-            console.log(response.data); // Handle the response data
-        })
+
+        setRecommendation(response.data.message)
         
   
 
@@ -175,17 +174,17 @@ export default function CropRecommender() {
         </form>
       </CardContent>
       <CardFooter className="flex flex-col items-start">
-        {error && (
+        {/* {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        )}
+        )} */}
         {recommendation && (
           <Alert>
             <AlertTitle>Recommended Crop</AlertTitle>
-            <AlertDescription>{recommendation}</AlertDescription>
+            <AlertDescription>{recommendation.replace('b\'', '').replace('\'', '')}</AlertDescription>
           </Alert>
         )}
       </CardFooter>
