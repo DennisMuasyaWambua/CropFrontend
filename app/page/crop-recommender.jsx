@@ -43,7 +43,11 @@ export default function CropRecommender() {
             Humidity:formData.humidity,
             Ph:formData.ph,
             Rainfall:formData.rainfall,
-        })
+        },{
+        headers: {
+            'Content-Type': 'application/json',
+        }}
+        )
         .then(response => {
             console.log(response.data); // Handle the response data
         })
@@ -88,8 +92,8 @@ export default function CropRecommender() {
             <div className="space-y-2">
               <Label htmlFor="N">Nitrogen (N)</Label>
               <Input
-                id="N"
-                name="N"
+                id="n"
+                name="n"
                 type="number"
                 placeholder="0-140"
                 value={formData.N}
@@ -100,8 +104,8 @@ export default function CropRecommender() {
             <div className="space-y-2">
               <Label htmlFor="P">Phosphorus (P)</Label>
               <Input
-                id="P"
-                name="P"
+                id="p"
+                name="p"
                 type="number"
                 placeholder="5-145"
                 value={formData.P}
@@ -112,8 +116,8 @@ export default function CropRecommender() {
             <div className="space-y-2">
               <Label htmlFor="K">Potassium (K)</Label>
               <Input
-                id="K"
-                name="K"
+                id="k"
+                name="k"
                 type="number"
                 placeholder="5-205"
                 value={formData.K}
